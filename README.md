@@ -2,9 +2,13 @@
 
 一个奶油粉色的 HarmonyOS 原生本地记账应用，使用 ArkTS / ArkUI。包名 `com.trumpone.tuanziledger`。
 
+完整工程见仓库根目录 `tuanzi-ledger-source.zip`，解压后用DevEco Studio打开其中的项目文件夹。
+
 ## 功能
 
 - 本机账号注册、登录、修改密码；多个账号账本分别保存。
+- 华为账号登录、关联已有本机账本，不申请手机号；真机验证状态见VALIDATION.md。
+- 每日及手动检查公开仓库版本和提交；调试版更新仍需连接电脑覆盖安装。
 - 收入、支出、账户转账；编辑、删除、选择日期、备注。
 - 明细列表、月份及类型筛选、关键词搜索。
 - 自定义账户、期初余额、收支分类；自动计算账户余额和总资产。
@@ -20,15 +24,17 @@
 3. 在首页“记一笔小日常”保存收支；在“明细”点击记录可修改或删除。
 4. 在“我的”设置预算、分类和导出备份。
 
-账号只在当前设备有效，不联网验证，不提供短信登录、云同步或密码找回。退出登录及重启应用不会删除已保存账目。卸载/清除应用数据会删除账本，请先导出JSON备份。CSV用于查看，不能恢复。JSON恢复会替换当前账号的账本，保留登录密码，不影响其他账号。
+本机密码无需联网验证，华为账号登录需要华为认证。账本只在当前设备保存，不提供短信登录或账目云同步；未关联华为账号的本机密码无法找回。退出登录及重启应用不会删除已保存账目。卸载/清除应用数据会删除账本，请先导出JSON备份。CSV用于查看，不能恢复。JSON恢复会替换当前账号的账本，保留登录身份，不影响其他账号。
 
 ## 隐私和备份
 
-不申请网络、通讯录、相册、定位权限；不包含广告、统计SDK或云服务。使用系统加密RDB数据库，登录密码以随机盐PBKDF2-SHA256派生值保存。JSON/CSV导出是明文，请自行保管；JSON不含用户名和密码派生信息。导入先验证格式、数量、日期、金额、引用完整性，再事务替换。文件最大64MiB，最多50,000条流水。
+仅声明网络权限，不申请通讯录、相册、定位权限；不包含广告、统计SDK或账目云服务。版本检查访问GitHub公开版本及提交信息，GitHub接收常规IP和请求信息，不发送用户名、账目或备份。点击华为账号登录/关联时由系统Account Kit验证身份，只保存OpenID摘要，不获取手机号，不保存授权码或ID Token。
+
+使用系统加密RDB数据库，登录密码以随机盐PBKDF2-SHA256派生值保存。JSON/CSV导出是明文，请自行保管；JSON不含登录身份。导入先验证格式、数量、日期、金额、引用完整性，再事务替换。文件最大64MiB，最多50,000条流水。
 
 ## 开发与构建
 
-使用 DevEco Studio 打开项目，安装 HarmonyOS SDK，等待 Hvigor 同步。最低兼容API12；已在HarmonyOS API26设备构建安装验证。项目不包含签名、证书、设备描述文件或私人数据。真机运行时请在 DevEco Studio 的 Project Structure → Signing Configs 配置自己的自动签名，再选择设备运行。
+使用 DevEco Studio 打开项目，安装 HarmonyOS SDK，等待 Hvigor 同步。最低兼容API20；已在HarmonyOS API26设备构建安装验证。项目不包含签名、证书、设备描述文件或私人数据。真机运行时请在 DevEco Studio 的 Project Structure → Signing Configs 配置自己的自动签名，再选择设备运行。
 
 源码目录：`entry/src/main/ets/`。`core/`为金额、汇总与备份验证；`data/`为本地事务存储；`services/`为密码派生与文件选择器；`pages/`为界面。
 
@@ -36,7 +42,7 @@
 
 ```sh
 # TYPESCRIPT_LIB 指向本地SDK中的 typescript/lib/typescript.js
-TYPESCRIPT_LIB=/path/to/typescript/lib/typescript.js node --test tests/core.test.cjs
+TYPESCRIPT_LIB=/path/to/typescript/lib/typescript.js node --test tests/core.test.cjs tests/services.test.cjs
 python3 -m unittest discover -s tests -v
 ```
 
@@ -44,6 +50,14 @@ python3 -m unittest discover -s tests -v
 
 ## 当前范围
 
-0.1.0 首版：手动人民币记账。暂不含银行/支付账单自动获取、发票识别、周期账单、多币种与云端同步。详情见 VALIDATION.md。
+0.2.1：手动人民币记账。暂不含银行/支付账单自动获取、发票识别、周期账单、多币种与云端同步。详情见 VALIDATION.md。
+
+## 更新与登录配置
+
+`latest.json`描述已发布的应用版本。发布者需先编译验证并递增versionCode，再同步修改此文件。源代码变更不等于已经生成安装包；应用另读取GitHub最新提交，提示自上次成功检查以来的仓库改动。
+
+每日检查通过WorkScheduler非精确定时调度，启动/回到前台时补查。系统可能延后或停止后台任务。成功后24小时内不重复检查，失败后1小时再试；手动检查可立即重试。关闭开关会取消后台任务及自动检查。断网时保留旧结果并明确提示失败。调试版不支持手机自动下载安装，不下载或运行仓库脚本；正式上架后可接入应用市场更新。
+
+华为账号需要开发者后台的应用身份、Client ID及签名公钥指纹。签名Profile也需关联相同APP ID。源码包含当前应用的公开Client ID，不含Client Secret；自行分发时请替换为自己的配置。保持原有签名公钥才能覆盖安装保留账本，切勿为了更新卸载旧版。
 
 MIT License。

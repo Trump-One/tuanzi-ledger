@@ -1,0 +1,7 @@
+{
+  "format": "tuanzi-ledger-update-v1",
+  "versionCode": 1001001,
+  "versionName": "0.2.1",
+  "notes": "新增每日/手动版本检查和仓库提交提示。华为账号登录及本机账本关联代码已接入，注册签名已准备，等待真机复测。调试版需电脑USB覆盖安装。",
+  "distribution": "usb"
+}
